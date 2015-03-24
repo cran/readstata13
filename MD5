@@ -1,5 +1,5 @@
-adea273ae6bd631e0b6aef81a303a4b5 *CHANGELOG
-76c6ccd9e16a0a47c156fc339f7295f4 *DESCRIPTION
+ee31a42c4acfa215d4b4d430c24d8ddd *CHANGELOG
+486e9c37c539cb2268f7bfbce5fba849 *DESCRIPTION
 e8c1458438ead3c34974bc0be3a03ed6 *LICENSE
 a69f50625898f26da2b94819b1157f6f *NAMESPACE
 98bcf91c1df517b561ad3477b84d445c *R/RcppExports.R
@@ -8,7 +8,7 @@ bc521a4a7a2534d91f7d9533fbebcfa0 *R/read.R
 552cf5170bb51a4dfabfbfc47a000383 *R/readstata13.R
 1d963400c1e746b4ada172d5a9ced03d *R/save.R
 c764c89befdd957e9e25e707c3004590 *R/tools.R
-dfb109cf0557ed7601ad81a218e7ce48 *README.md
+ff8af90fe314025aecc9f4dccb43948a *README.md
 295396a1a55b4326d89d2c2a86e90441 *inst/extdata/sp500.stbcal
 c2e062207f1dd48fbcbbe6988b9f2f30 *inst/extdata/statacar.dta
 ebe4cd561bd0748b655e5a206556548a *man/as.caldays.Rd
@@ -24,7 +24,7 @@ d8e43c3d1365463352d9c915163e5f26 *man/set.label.Rd
 e6a78a394b6fb011b19da447dc7e0d2a *man/set.lang.Rd
 9a659d66b52f9993d51a43c1de86856e *man/stbcal.Rd
 7f9a5721904a34d1de808441df409849 *src/RcppExports.cpp
-3c09259a04d8564125a4970cf6d33590 *src/rcpp_readstata.cpp
+d9d56ed8096d8c60ba25b496330f9baa *src/rcpp_readstata.cpp
 e06889fea154a8ff80eadad937062322 *src/rcpp_savestata.cpp
 a99e225a6eda892bb8ca38064964e425 *src/statadefines.h
 bf668ed206e9a418322b61303221356c *src/swap_endian.h
