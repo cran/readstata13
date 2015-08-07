@@ -22,16 +22,16 @@ save.dta13(dat, file="newfile.dta")
 ```
 
 ## Development Version
-To install the current release (0.6.1) from github you need the plattform specific build tools. On Windows a current installation of [Rtools](http://cran.r-project.org/bin/windows/Rtools/) is necessary, while OS X users need to install [Xcode](https://itunes.apple.com/us/app/xcode/id497799835). 
+To install the current release from github you need the plattform specific build tools. On Windows a current installation of [Rtools](http://cran.r-project.org/bin/windows/Rtools/) is necessary, while OS X users need to install [Xcode](https://itunes.apple.com/us/app/xcode/id497799835). 
 
 ```R
 # install.packages("devtools")
-devtools::install_github("sjewo/readstata13", ref="0.7")
+devtools::install_github("sjewo/readstata13", ref="0.7.1")
 ```
 
 Older Versions of devtools require a username option:
 ```R
-install_github("readstata13", username="sjewo", ref="0.7")
+install_github("readstata13", username="sjewo", ref="0.7.1")
 ```
 
 To install the current development version from github:

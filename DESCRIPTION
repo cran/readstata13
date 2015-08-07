@@ -1,7 +1,7 @@
 Package: readstata13
 Type: Package
 Title: Import Stata 13 and 14 Data Files
-Version: 0.7
+Version: 0.7.1
 Authors@R: c(
     person("Jan Marvin", "Garbuszus",
     email = "jan.garbuszus@ruhr-uni-bochum.de", role = c("aut")),
@@ -17,10 +17,10 @@ Imports: Rcpp (>= 0.11.5)
 LinkingTo: Rcpp
 ByteCompile: yes
 NeedsCompilation: yes
-Packaged: 2015-05-11 16:53:28 UTC; sj
+Packaged: 2015-08-07 14:47:51 UTC; sj
 Author: Jan Marvin Garbuszus [aut],
   Sebastian Jeworutzki [aut, cre],
   R Core Team [cph]
 Maintainer: Sebastian Jeworutzki <Sebastian.Jeworutzki@ruhr-uni-bochum.de>
 Repository: CRAN
-Date/Publication: 2015-05-11 20:37:01
+Date/Publication: 2015-08-07 17:24:28
