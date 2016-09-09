@@ -29,18 +29,18 @@ save.dta13(dat, file="newfile.dta")
 ## Development Version
 To install the current release from github you need the plattform specific build
 tools. On Windows a current installation of
-[Rtools](http://cran.r-project.org/bin/windows/Rtools/) is necessary, while OS X
+[Rtools](https://cran.r-project.org/bin/windows/Rtools/) is necessary, while OS X
 users need to install
 [Xcode](https://itunes.apple.com/us/app/xcode/id497799835). 
 
 ```R
 # install.packages("devtools")
-devtools::install_github("sjewo/readstata13", ref="0.8.4")
+devtools::install_github("sjewo/readstata13", ref="0.8.5")
 ```
 
 Older Versions of devtools require a username option:
 ```R
-install_github("readstata13", username="sjewo", ref="0.8.4")
+install_github("readstata13", username="sjewo", ref="0.8.5")
 ```
 
 To install the current development version from github:
@@ -56,7 +56,7 @@ devtools::install_github("sjewo/readstata13", ref="testing")
 [![CRAN Downloads](http://cranlogs.r-pkg.org/badges/readstata13)](https://cran.r-project.org/package=readstata13)
 
 ### Working features
-
+* [0.8.5] fix errors on big-endians systems
 * [0.8.4] fix valgrind errors. converting from dta.write to writestr
 * [0.8.4] fix for empty data label
 * [0.8.4] make replace.strl default
