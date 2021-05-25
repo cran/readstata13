@@ -4,11 +4,24 @@
 \alias{read.dta13}
 \title{Read Stata Binary Files}
 \usage{
-read.dta13(file, convert.factors = TRUE, generate.factors = FALSE,
-  encoding = "UTF-8", fromEncoding = NULL, convert.underscore = FALSE,
-  missing.type = FALSE, convert.dates = TRUE, replace.strl = TRUE,
-  add.rownames = FALSE, nonint.factors = FALSE, select.rows = NULL,
-  select.cols = NULL, strlexport = FALSE, strlpath = ".")
+read.dta13(
+  file,
+  convert.factors = TRUE,
+  generate.factors = FALSE,
+  encoding = "UTF-8",
+  fromEncoding = NULL,
+  convert.underscore = FALSE,
+  missing.type = FALSE,
+  convert.dates = TRUE,
+  replace.strl = TRUE,
+  add.rownames = FALSE,
+  nonint.factors = FALSE,
+  select.rows = NULL,
+  select.cols = NULL,
+  strlexport = FALSE,
+  strlpath = ".",
+  tz = "GMT"
+)
 }
 \arguments{
 \item{file}{\emph{character.} Path to the dta file you want to import.}
@@ -23,8 +36,8 @@ are found, unique labels will be generated according the following scheme:
 
 \item{encoding}{\emph{character.} Strings can be converted from Windows-1252
 or UTF-8 to system encoding. Options are "latin1" or "UTF-8" to specify
-target encoding explicitly. Stata 14 and 15 files are UTF-8 encoded and may contain
-strings which can't be displayed in the current locale.
+target encoding explicitly. Stata 14, 15 and 16 files are UTF-8 encoded and
+may contain strings which can't be displayed in the current locale.
 Set encoding=NULL to stop reencoding.}
 
 \item{fromEncoding}{\emph{character.} We expect strings to be encoded as
@@ -56,12 +69,16 @@ will be assigned to variables of type float and double.}
 value rows from 1:val are selected. If two values of a range are selected
 the rows in range will be selected.}
 
-\item{select.cols}{\emph{character:} Vector of variables to select.}
+\item{select.cols}{\emph{character.} Vector of variables to select.}
 
-\item{strlexport}{\emph{logical:} Should strl content be exported as binary
+\item{strlexport}{\emph{logical.} Should strl content be exported as binary
 files?}
 
-\item{strlpath}{\emph{cahracter:} Path for strl export.}
+\item{strlpath}{\emph{character.} Path for strl export.}
+
+\item{tz}{\emph{character.} time zone specification to be used for 
+POSIXct values. ‘""’ is the current time zone, and ‘"GMT"’ is UTC 
+(Universal Time, Coordinated).}
 }
 \value{
 The function returns a data.frame with attributes. The attributes
@@ -128,9 +145,15 @@ Reading dta-files of older and newer versions than 13 was introduced
 read.dta13 uses GPL 2 licensed code by Thomas Lumley and R-core members
  from foreign::read.dta().
 }
+\examples{
+\dontrun{
+  library(readstata13)
+  r13 <- read.dta13("https://www.stata-press.com/data/r13/auto.dta")
+} 
+}
 \references{
 Stata Corp (2014): Description of .dta file format
- \url{http://www.stata.com/help.cgi?dta}
+ \url{https://www.stata.com/help.cgi?dta}
 }
 \seealso{
 \code{\link[foreign]{read.dta}} in package \code{foreign} and

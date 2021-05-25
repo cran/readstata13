@@ -4,10 +4,19 @@
 \alias{save.dta13}
 \title{Write Stata Binary Files}
 \usage{
-save.dta13(data, file, data.label = NULL, time.stamp = TRUE,
-  convert.factors = TRUE, convert.dates = TRUE, tz = "GMT",
-  add.rownames = FALSE, compress = FALSE, version = 117,
-  convert.underscore = FALSE)
+save.dta13(
+  data,
+  file,
+  data.label = NULL,
+  time.stamp = TRUE,
+  convert.factors = TRUE,
+  convert.dates = TRUE,
+  tz = "GMT",
+  add.rownames = FALSE,
+  compress = FALSE,
+  version = 117,
+  convert.underscore = FALSE
+)
 }
 \arguments{
 \item{data}{\emph{data.frame.} A data.frame Object.}
@@ -28,7 +37,9 @@ hexcode.}
 \item{convert.dates}{\emph{logical.} If \code{TRUE}, dates will be converted
 to Stata date time format. Code from \code{foreign::write.dta}}
 
-\item{tz}{\emph{character.} The name of the timezone convert.dates will use.}
+\item{tz}{\emph{character.} time zone specification to be used for 
+POSIXct values and dates (if convert.dates is TRUE). ‘""’ is the current 
+time zone, and ‘"GMT"’ is UTC  (Universal Time, Coordinated).}
 
 \item{add.rownames}{\emph{logical.} If \code{TRUE}, a new variable rownames
 will be added to the dta-file.}
@@ -37,9 +48,10 @@ will be added to the dta-file.}
 use all of Statas numeric-vartypes.}
 
 \item{version}{\emph{numeric.} Stata format for the resulting dta-file either
-Stata version number (6 - 15) or the internal Stata dta-format (e.g. 117 for Stata 13). 
-Experimental support for large datasets: Use version="15mp" to save the dataset
-in the new Stata 15/MP file format. This feature is not thoroughly tested yet.}
+Stata version number (6 - 16) or the internal Stata dta-format (e.g. 117 for
+Stata 13). Experimental support for large datasets: Use version="15mp" to 
+save the dataset in the new Stata 15/16 MP file format. This feature is not
+thoroughly tested yet.}
 
 \item{convert.underscore}{\emph{logical.} If \code{TRUE}, all non numerics or
 non alphabet characters will be converted to underscores.}
@@ -64,9 +76,15 @@ The function writes a dta-file to disk. The following features of the
 \code{save.dta13} writes a Stata dta-file bytewise and saves the data
 into a dta-file.
 }
+\examples{
+\dontrun{
+  library(readstata13)
+  save.dta13(cars, file="cars.dta")
+} 
+}
 \references{
 Stata Corp (2014): Description of .dta file format
- \url{http://www.stata.com/help.cgi?dta}
+ \url{https://www.stata.com/help.cgi?dta}
 }
 \seealso{
 \code{\link[foreign]{read.dta}} in package \code{foreign} and

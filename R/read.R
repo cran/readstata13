@@ -1,4 +1,5 @@
-# Copyright (C) 2014-2017 Jan Marvin Garbuszus and Sebastian Jeworutzki
+#
+# Copyright (C) 2014-2021 Jan Marvin Garbuszus and Sebastian Jeworutzki
 # Copyright (C) of 'convert.dates' and 'missing.types' Thomas Lumley
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -28,8 +29,8 @@
 #'  "label_(integer code)".
 #' @param encoding \emph{character.} Strings can be converted from Windows-1252
 #'  or UTF-8 to system encoding. Options are "latin1" or "UTF-8" to specify
-#'  target encoding explicitly. Stata 14 and 15 files are UTF-8 encoded and may contain
-#'  strings which can't be displayed in the current locale.
+#'  target encoding explicitly. Stata 14, 15 and 16 files are UTF-8 encoded and
+#'  may contain strings which can't be displayed in the current locale.
 #'  Set encoding=NULL to stop reencoding.
 #' @param fromEncoding \emph{character.} We expect strings to be encoded as
 #'  "CP1252" for Stata Versions 13 and older. For dta files saved with Stata 14
@@ -52,10 +53,13 @@
 #' @param select.rows \emph{integer.} Vector of one or two numbers. If single
 #'  value rows from 1:val are selected. If two values of a range are selected
 #'  the rows in range will be selected.
-#' @param select.cols \emph{character:} Vector of variables to select.
-#' @param strlexport \emph{logical:} Should strl content be exported as binary
+#' @param select.cols \emph{character.} Vector of variables to select.
+#' @param strlexport \emph{logical.} Should strl content be exported as binary
 #'  files?
-#' @param strlpath \emph{cahracter:} Path for strl export.
+#' @param strlpath \emph{character.} Path for strl export.
+#' @param tz \emph{character.} time zone specification to be used for 
+#'  POSIXct values. ‘""’ is the current time zone, and ‘"GMT"’ is UTC 
+#'  (Universal Time, Coordinated).
 #'
 #' @details If the filename is a url, the file will be downloaded as a temporary
 #'  file and read afterwards.
@@ -117,7 +121,12 @@
 #' versions < 13 and \code{read_dta} in package \code{haven} for Stata version
 #'  >= 13.
 #' @references Stata Corp (2014): Description of .dta file format
-#'  \url{http://www.stata.com/help.cgi?dta}
+#'  \url{https://www.stata.com/help.cgi?dta}
+#' @examples
+#' \dontrun{
+#'   library(readstata13)
+#'   r13 <- read.dta13("https://www.stata-press.com/data/r13/auto.dta")
+#' } 
 #' @author Jan Marvin Garbuszus \email{jan.garbuszus@@ruhr-uni-bochum.de}
 #' @author Sebastian Jeworutzki \email{sebastian.jeworutzki@@ruhr-uni-bochum.de}
 #' @useDynLib readstata13
@@ -128,9 +137,12 @@ read.dta13 <- function(file, convert.factors = TRUE, generate.factors=FALSE,
                        encoding = "UTF-8", fromEncoding=NULL,
                        convert.underscore = FALSE, missing.type = FALSE,
                        convert.dates = TRUE, replace.strl = TRUE,
-                       add.rownames = FALSE, nonint.factors=FALSE,
+                       add.rownames = FALSE, nonint.factors = FALSE,
                        select.rows = NULL, select.cols = NULL,
-                       strlexport = FALSE, strlpath = ".") {
+                       strlexport = FALSE, strlpath = ".", tz = "GMT") {
+
+  # List to collect all warnings from factor conversion
+  collected_warnings <- list(misslab = NULL, floatfact = NULL)
 
   # Check if path is a url
   if (length(grep("^(http|ftp|https)://", file))) {
@@ -143,7 +155,7 @@ read.dta13 <- function(file, convert.factors = TRUE, generate.factors=FALSE,
     filepath <- get.filepath(file)
   }
   if (!file.exists(filepath))
-    return(message("File not found."))
+    stop("File not found.")
 
 
 
@@ -252,6 +264,7 @@ read.dta13 <- function(file, convert.factors = TRUE, generate.factors=FALSE,
   }
 
   var.labels <- attr(data, "var.labels")
+  datalabel <- attr(data, "data.label")
 
   ## Encoding
   if(!is.null(encoding)) {
@@ -262,6 +275,9 @@ read.dta13 <- function(file, convert.factors = TRUE, generate.factors=FALSE,
       if(attr(data, "version") >= 118L)
         fromEncoding <- "UTF-8"
     }
+    
+    attr(data, "data.label") <- read.encoding(datalabel, fromEncoding,
+                                              encoding)
 
     # varnames
     names(data) <- read.encoding(names(data), fromEncoding, encoding)
@@ -327,16 +343,6 @@ read.dta13 <- function(file, convert.factors = TRUE, generate.factors=FALSE,
 
 
   if (convert.dates) {
-    convert_dt_c <- function(x)
-      as.POSIXct((x + 0.1) / 1000, origin = "1960-01-01") # avoid rounding down
-
-    convert_dt_C <- function(x) {
-      ls <- .leap.seconds + seq_along(.leap.seconds) + 315619200
-      z <- (x + 0.1) / 1000 # avoid rounding down
-      z <- z - rowSums(outer(z, ls, ">="))
-      as.POSIXct(z, origin = "1960-01-01")
-    }
-
     ff <- attr(data, "formats")
     ## dates <- grep("%-*d", ff)
     ## Stata 12 introduced 'business dates'
@@ -352,8 +358,11 @@ read.dta13 <- function(file, convert.factors = TRUE, generate.factors=FALSE,
     base <- structure(-3653L, class = "Date") # Stata dates are integer vars
     for (v in dates) data[[v]] <- structure(base + data[[v]], class = "Date")
 
-    for (v in grep("%tc", ff)) data[[v]] <- convert_dt_c(data[[v]])
-    for (v in grep("%tC", ff)) data[[v]] <- convert_dt_C(data[[v]])
+    for (v in grep("%tc", ff)) data[[v]] <- convert_dt_c(data[[v]], tz)
+    for (v in grep("%tC", ff)) data[[v]] <- convert_dt_C(data[[v]], tz)
+    for (v in grep("%tm", ff)) data[[v]] <- convert_dt_m(data[[v]])
+    for (v in grep("%tq", ff)) data[[v]] <- convert_dt_q(data[[v]])
+    for (v in grep("%ty", ff)) data[[v]] <- convert_dt_y(data[[v]])
   }
 
   if (convert.factors) {
@@ -366,22 +375,24 @@ read.dta13 <- function(file, convert.factors = TRUE, generate.factors=FALSE,
       if (labname %in% names(label)) {
         if((vartype == sdouble | vartype == sfloat)) {
           if(!nonint.factors) {
-            warning(paste0("\n  ",vnames[i], ":\n  Factor codes of type double ",
-                           "or float detected - no labels assigned.\n  Set ",
-                           "option nonint.factors to TRUE to assign labels ",
-                           "anyway.\n"))
+            
+            # collect variables which need a warning
+            collected_warnings[["floatfact"]] <- c(collected_warnings[["floatfact"]], vnames[i])
             next
           }
         }
         # get unique values / omit NA
-        varunique <- na.omit(unique(data[, i]))
+        varunique <- unique(as.character(na.omit(data[, i])))
 
         #check for duplicated labels
         labcount <- table(names(labtable))
         if(any(labcount > 1)) {
-          warning(paste0("\n  ",vnames[i], ":\n  Duplicated factor levels ",
-                         "detected - generating unique labels.\n"))
+          
+          # collect variables which need a warning
+          collected_warnings[["dublifact"]] <- c(collected_warnings[["dublifact"]], vnames[i])
+
           labdups <- names(labtable) %in% names(labcount[labcount > 1])
+          
           # generate unique labels from assigned label and code number
           names(labtable)[labdups] <- paste0(names(labtable)[labdups],
                                              "_(", labtable[labdups], ")")
@@ -393,21 +404,22 @@ read.dta13 <- function(file, convert.factors = TRUE, generate.factors=FALSE,
                               labels=names(labtable))
           # else generate labels from codes
         } else if (generate.factors) {
-          names(varunique) <- as.character(varunique)
+
+          names(varunique) <- varunique
           gen.lab  <- sort(c(varunique[!varunique %in% labtable], labtable))
 
           data[, i] <- factor(data[, i], levels=gen.lab,
                               labels=names(gen.lab))
-          
+
           # add generated labels to label.table
           gen.lab.name <- paste0("gen_",vnames[i])
-          attr(data, "label.table")[[gen.lab.name]] <- gen.lab 
+          attr(data, "label.table")[[gen.lab.name]] <- gen.lab
           attr(data, "val.labels")[i] <- gen.lab.name
 
         } else {
-          warning(paste0("\n  ",vnames[i], ":\n  Missing factor labels - no ",
-                         "labels assigned.\n  Set option generate.factors=T to ",
-                         "generate labels."))
+          # collect variables which need a warning
+          collected_warnings[["misslab"]] <- c(collected_warnings[["mislab"]],
+                                               vnames[i])
         }
       }
     }
@@ -418,5 +430,46 @@ read.dta13 <- function(file, convert.factors = TRUE, generate.factors=FALSE,
     data[[1]] <- NULL
   }
 
+  ## issue warnings
+  #dublifact
+  if(length(collected_warnings[["dublifact"]]) > 0) {
+    dublifactvars <- paste(collected_warnings[["dublifact"]], collapse = ", ")
+    
+    warning(paste0("\n   Duplicated factor levels for variables\n\n",
+                   paste(strwrap(dublifactvars, 
+                                 width = 0.6 * getOption("width"), 
+                                 prefix = "   "), 
+                         collapse = "\n"),
+                 "\n\n   Unique labels for these variables have been generated.\n"))
+  }
+  
+  # floatfact
+  if(length(collected_warnings[["floatfact"]]) > 0) {
+    
+    floatfactvars <- paste(collected_warnings[["floatfact"]], collapse = ", ")
+    
+    warning(paste0("\n   Factor codes of type double or float detected in variables\n\n",
+              paste(strwrap(floatfactvars, 
+                            width = 0.6 * getOption("width"), 
+                            prefix = "   "), 
+                    collapse = "\n"),
+               "\n\n   No labels have been assigned.",
+               "\n   Set option 'nonint.factors = TRUE' to assign labels anyway.\n"))
+  }
+  # misslab
+  if(length(collected_warnings[["misslab"]]) > 0) {
+    
+    misslabvars <- paste(collected_warnings[["misslab"]], collapse = ", ")
+    
+    warning(paste0("\n   Missing factor labels for variables\n\n",
+                   paste(strwrap(misslabvars, 
+                                 width = 0.6 * getOption("width"), 
+                                 prefix = "   "), 
+                         collapse = "\n"),
+                 "\n\n   No labels have beend assigned.",
+                 "\n   Set option 'generate.factors=TRUE' to generate labels."))
+  }
+  
+  # return data.frame
   return(data)
 }

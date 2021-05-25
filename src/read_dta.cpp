@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2017 Jan Marvin Garbuszus and Sebastian Jeworutzki
+ * Copyright (C) 2014-2019 Jan Marvin Garbuszus and Sebastian Jeworutzki
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -268,8 +268,13 @@ List read_dta(FILE * file, const bool missing, const IntegerVector selectrows,
   IntegerVector sortlist(big_k);
   for (uint64_t i=0; i<big_k; ++i)
   {
-    uint16_t nsortlist = 0;
-    nsortlist = readbin(nsortlist, file, swapit);
+    uint32_t nsortlist = 0;
+    
+    if ((release == 117) | (release == 118))
+      nsortlist = readbin((uint16_t)nsortlist, file, swapit);
+    if (release == 119)
+      nsortlist = readbin(nsortlist, file, swapit);
+    
     sortlist[i] = nsortlist;
   }
 

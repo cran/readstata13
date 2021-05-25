@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014-2017 Jan Marvin Garbuszus and Sebastian Jeworutzki
+# Copyright (C) 2014-2021 Jan Marvin Garbuszus and Sebastian Jeworutzki
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -33,15 +33,18 @@
 #'  to Stata date time format. Code from \code{foreign::write.dta}
 #' @param convert.underscore \emph{logical.} If \code{TRUE}, all non numerics or
 #' non alphabet characters will be converted to underscores.
-#' @param tz \emph{character.} The name of the timezone convert.dates will use.
+#' @param tz \emph{character.} time zone specification to be used for 
+#'  POSIXct values and dates (if convert.dates is TRUE). ‘""’ is the current 
+#'  time zone, and ‘"GMT"’ is UTC  (Universal Time, Coordinated).
 #' @param add.rownames \emph{logical.} If \code{TRUE}, a new variable rownames
 #'  will be added to the dta-file.
 #' @param compress \emph{logical.} If \code{TRUE}, the resulting dta-file will
 #'  use all of Statas numeric-vartypes.
 #' @param version \emph{numeric.} Stata format for the resulting dta-file either
-#'  Stata version number (6 - 15) or the internal Stata dta-format (e.g. 117 for Stata 13). 
-#'  Experimental support for large datasets: Use version="15mp" to save the dataset
-#'  in the new Stata 15/MP file format. This feature is not thoroughly tested yet.
+#'  Stata version number (6 - 16) or the internal Stata dta-format (e.g. 117 for
+#'  Stata 13). Experimental support for large datasets: Use version="15mp" to 
+#'  save the dataset in the new Stata 15/16 MP file format. This feature is not
+#'  thoroughly tested yet.
 #' @return The function writes a dta-file to disk. The following features of the
 #'  dta file format are supported:
 #' \describe{
@@ -60,11 +63,15 @@
 #'  \code{memisc} for dta files from Stata versions < 13 and \code{read_dta} in
 #'  package \code{haven} for Stata version >= 13.
 #' @references Stata Corp (2014): Description of .dta file format
-#'  \url{http://www.stata.com/help.cgi?dta}
+#'  \url{https://www.stata.com/help.cgi?dta}
+#' @examples
+#' \dontrun{
+#'   library(readstata13)
+#'   save.dta13(cars, file="cars.dta")
+#' } 
 #' @author Jan Marvin Garbuszus \email{jan.garbuszus@@ruhr-uni-bochum.de}
 #' @author Sebastian Jeworutzki \email{sebastian.jeworutzki@@ruhr-uni-bochum.de}
 #' @useDynLib readstata13
-#' @importFrom utils localeToCharset
 #' @export
 save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
                        convert.factors=TRUE, convert.dates=TRUE, tz="GMT",
@@ -78,9 +85,9 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
     stop("Path is invalid. Possibly a non-existing directory.")
 
   # Allow writing version as Stata version not Stata format
-  if (version=="15mp")
+  if (version=="15mp" | version=="16mp")
     version <- 119
-  if (version==15L)
+  if (version==15L | version==16L)
     version <- 118
   if (version==14L)
     version <- 118
@@ -98,7 +105,7 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
     version <- 108
 
   if (version == 119)
-    message("Support for Stata 15/MP (119) format is experimental and not thoroughly tested.")
+    message("Support for Stata 15/16 MP (119) format is experimental and not thoroughly tested.")
 
   if (version<102 | version == 109 | version == 116 | version>119)
     stop("Version mismatch abort execution. No Data was saved.")
@@ -127,13 +134,15 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
   if(!is.data.frame(data)) {
     stop("Object is not of class data.frame.")
   }
+  
+  is_utf8 <- l10n_info()[["UTF-8"]]
 
   # Is recoding necessary?
   if (version<=117) {
     # Reencoding is always needed
     doRecode <- TRUE
     toEncoding <- "CP1252"
-  } else if (toupper(localeToCharset()[1])!="UTF-8") {
+  } else if (!is_utf8) {
     # If R runs in a non UTF-8 locale and Stata > 13
     doRecode <- TRUE
     toEncoding <- "UTF-8"
@@ -172,6 +181,17 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
     data[[v]] <- as.integer(data[[v]])
   vartypen <- vtyp <- sapply(data, class)
 
+  # Identify POSIXt
+  posix_datetime <- which(sapply(data, 
+                         function(x) inherits(x, "POSIXt")))
+  vartypen[posix_datetime] <- vtyp[posix_datetime] <- "POSIXt"
+
+  # Change origin to 1960-01-01
+  # times: seconds from 1970-01-01 + 10 years (new origin 1960-01-01) * 1000 = miliseconds
+  # go back 1h
+  for (v in names(vartypen[vartypen == "POSIXt"]))
+    data[[v]] <- (as.double(data[[v]]) + 315622800 - 60*60)*1000
+
   if (convert.factors){
     if (version < 106) {
 
@@ -208,7 +228,7 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
     }
     attr(data, "label.table") <- rev(label.table)
     if (doRecode) {
-      valLabel <- save.encoding(valLabel, toEncoding)
+      valLabel <- sapply(valLabel, save.encoding, toEncoding)
     }
     attr(data, "vallabels") <- valLabel
   } else {
@@ -223,13 +243,6 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
     for (v in dates)
       data[[v]] <- as.vector(
         julian(data[[v]],as.Date("1960-1-1", tz = "GMT"))
-      )
-    dates <- which(
-      sapply(data, function(x) inherits(x,"POSIXt"))
-    )
-    for (v in dates)
-      data[[v]] <- as.vector(
-        round(julian(data[[v]], ISOdate(1960, 1, 1, tz = tz)))
       )
   }
 
@@ -254,10 +267,10 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
 
     # check if numerics can be stored as integers
     numToCompress <- sapply(data[ff], saveToExport)
-
+    
     if (any(numToCompress)) {
-      saveToConvert <- names(ff[numToCompress])
-      # replace numerics as intergers
+      saveToConvert <- names(data[ff])[numToCompress]
+      # replace numerics as integers
       data[saveToConvert] <- sapply(data[saveToConvert], as.integer)
 
       # recheck after update
@@ -301,6 +314,7 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
   str.length <- sapply(data[vartypen == "character"], FUN=maxchar)
   str.length[str.length > sstr] <- sstrl
 
+  # vartypen for character
   for (v in names(vartypen[vartypen == "character"]))
   {
    # str.length[str.length > sstr] <- sstrl # no loop necessary!
@@ -325,14 +339,21 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
   varnames <- names(data)
   lenvarnames <- sapply(varnames, nchar)
 
-  if (any (lenvarnames > 32) & version >= 117) {
-    message ("Varname to long. Resizing. Max size is 32.")
-    names(data) <- sapply(varnames, strtrim, width = 32)
+  maxlen <- 32
+  if (version <= 108)
+    maxlen <- 8
+  if (version >= 118)
+    maxlen <- 128
+  
+  if (any (lenvarnames > maxlen)) {
+    message ("Varname to long. Resizing. Max size is ", maxlen, ".")
+    names(data) <- sapply(varnames, strtrim, width = maxlen)
   }
 
   # Stata format "%9,0g" means european format
   formats <- vartypen
   formats[vtyp == "Date"]      <- "%td"
+  formats[vtyp == "POSIXt"]    <- "%tc"
   formats[formats == sdouble]  <- "%9.0g"
   formats[formats == sfloat]   <- "%9.0g"
   formats[formats == slong]    <- "%9.0g"
@@ -340,6 +361,7 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
   formats[formats == sbyte]    <- "%9.0g"
   formats[vartypen >= 0 & vartypen <= sstr] <-
     paste0("%", formats[vartypen >= 0 & vartypen <= sstr], "s")
+  formats[formats == sstrl]    <- "%9s"
 
   attr(data, "formats") <- formats
 
@@ -382,7 +404,12 @@ save.dta13 <- function(data, file, data.label=NULL, time.stamp=TRUE,
   # attached. In this case the last variable label has a non existing variable
   # label which will crash our Rcpp code. Since varlabels do not respect the
   # ordering inside the data frame, we simply drop them.
+
   varlabels <- attr(data, "var.labels")
+
+  if (doRecode) {
+      attr(data, "var.labels") <- save.encoding(varlabels, toEncoding)
+  } 
   if (!is.null(varlabels) & (length(varlabels)!=ncol(data))) {
     attr(data, "var.labels") <- NULL
     warning("Number of variable labels does not match number of variables.

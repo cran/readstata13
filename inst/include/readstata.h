@@ -40,11 +40,9 @@ typedef unsigned int uint32_t;
 #include <stdint.h>
 #endif
 
-#ifdef __APPLE__
-#  define off64_t off_t
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__OpenBSD__) || defined(__APPLE__) || defined(__ANDROID__)
 #  define fseeko64 fseeko
 #endif
-
 
 #include "read_dta.h"
 #include "read_pre13_dta.h"

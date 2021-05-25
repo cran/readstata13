@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014-2015 Jan Marvin Garbuszus and Sebastian Jeworutzki
+# Copyright (C) 2014-2021 Jan Marvin Garbuszus and Sebastian Jeworutzki
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -28,9 +28,16 @@ read.encoding <- function(x, fromEncoding, encoding) {
 }
 
 save.encoding <- function(x, encoding) {
-  iconv(x,
-        to=encoding,
-        sub="byte")
+  sapply(x, function(s)
+           ifelse(Encoding(s) == "unknown",
+                    iconv(s,
+                          to=encoding,
+                          sub="byte"),
+                    iconv(s,  from=Encoding(s),
+                          to=encoding,
+                          sub="byte")
+           )
+        )
 }
 
 # Function to check if directory exists
@@ -284,12 +291,30 @@ set.label <- function(dat, var.name, lang=NA) {
 #'  for all variables.
 #' @param lang \emph{character.} Label language. Default language defined by
 #'  \code{\link{get.lang}} is used if NA
-#' @param value \emph{character vector.} Vector of variable names.
+#' @param value \emph{character vector.} Character vector of size ncol(data) with variable names.
 #' @return Returns an named vector of variable labels
 #' @author Jan Marvin Garbuszus \email{jan.garbuszus@@ruhr-uni-bochum.de}
 #' @author Sebastian Jeworutzki \email{sebastian.jeworutzki@@ruhr-uni-bochum.de}
 #' @aliases varlabel
 #' @aliases 'varlabel<-'
+#' @examples
+#' dat <- read.dta13(system.file("extdata/statacar.dta", package="readstata13"),
+#'                   convert.factors=FALSE)
+#'
+#' # display variable labels 
+#' varlabel(dat)
+#' 
+#' # display german variable labels
+#' varlabel(dat, lang="de")
+#' 
+#' # display german variable label for brand
+#' varlabel(dat, var.name = "brand", lang="de")
+#' 
+#' # define new variable labels
+#' varlabel(dat) <- letters[1:ncol(dat)]
+#'
+#' # display new variable labels
+#' varlabel(dat)
 NULL
 
 #' @rdname varlabel
@@ -316,11 +341,11 @@ varlabel <- function(dat, var.name=NULL, lang=NA) {
 #' @rdname varlabel
 #' @export
 'varlabel<-' <- function(dat, value) {
-  nlabs <- length(attr(dat, "var.labels"))
+  nlabs <- ncol(dat)
   if (length(value)==nlabs) {
-    attr(x, "var.labels") <- value
+    attr(dat, "var.labels") <- value
   } else {
-      warning(paste("Vector of new labels must have",nlabs,"entries."))
+      warning(paste("Vector of new labels must have", nlabs, "entries."))
     }
   dat
 }
@@ -448,14 +473,16 @@ set.lang <- function(dat, lang=NA, generate.factors=FALSE) {
   }
   }
 
-#' Check if numeric vector can be expressed as interger vector
+#' Check if numeric vector can be expressed as integer vector
 #'
 #' Compression can reduce numeric vectors as integers if the vector does only
 #' contain integer type data.
 #'
 #' @param x vector of data frame
 saveToExport <- function(x) {
-  isTRUE(all.equal(x, as.integer(x)))
+  ifelse(any(is.infinite(x)), FALSE, 
+         ifelse(any(!is.na(x) & (x > .Machine$integer.max | x < -.Machine$integer.max)), FALSE, 
+                isTRUE(all.equal(x, as.integer(x)))))
 }
 
 

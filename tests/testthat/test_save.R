@@ -464,7 +464,43 @@ if (readstata13:::dir.exists13("data"))
   unlink("data", recursive = TRUE)
 dir.create("data")
 
-dd <- data.frame( dat = Sys.Date() )
+td       <- c("2001-05-15",
+              "1999-04-01",
+              "1975-11-15",
+              "1960-08-26",
+              "1987-12-16")
+tc       <- c("2011-06-25 05:15:06",
+              "2011-03-13 08:30:45",
+              "2011-04-09 10:17:08",
+              "2012-02-11 10:30:12",
+              "2012-08-01 06:45:59")
+tc_hh_mm <- c("2011-06-29 10:27:00",
+              "2011-03-26 02:15:00",
+              "2011-04-09 19:35:00",
+              "2012-02-16 02:15:00",
+              "2012-08-02 11:59:00")
+ty       <- c("2011-01-01",
+              "2011-01-01",
+              "2011-01-01",
+              "2012-01-01",
+              "2012-01-01")
+tm       <- c("2011-06-01",
+              "2011-03-01",
+              "2011-04-01",
+              "2012-02-01",
+              "2012-08-01")
+tq       <- c("2011-04-01",
+              "2011-01-01",
+              "2011-04-01",
+              "2012-01-01",
+              "2012-07-01")
+
+dd <- data.frame(td = as.Date(td),
+                 tc = as.POSIXct(tc, tz = "GMT"),
+                 tc_hh_mm = as.POSIXct(tc_hh_mm, tz = "GMT"),
+                 ty = as.Date(ty),
+                 tm = as.Date(tm),
+                 tq = as.Date(tq))
 
 save.dta13(dd, "data/dta_119.dta", version = 119, convert.dates = TRUE)
 save.dta13(dd, "data/dta_118.dta", version = 118, convert.dates = TRUE)
@@ -963,3 +999,41 @@ test_that("expansinon.fields", {
   # expect_equal(ef, dd103)
   # expect_equal(ef, dd102)
 })
+
+#### save and read varlabels  #### 
+
+if (readstata13:::dir.exists13("data")) {
+  unlink("data", recursive = TRUE)
+}
+dir.create("data")
+
+dd <- mtcars
+varlabeldd <- LETTERS[seq_len(ncol(dd))]
+varlabel(dd) <- varlabeldd
+
+version_list <- c(102,103,104,105,106,107,108,110,
+                  111,112,113,114,115,117,118,119)
+
+# write variable label attribute
+for(v in version_list) {
+  save.dta13(dd, paste0("data/dta_", v, ".dta"), version = v)
+}
+
+# read variable label attribute
+varlabeldd_read <- lapply(version_list, 
+                          function(v) {
+                            attr(read.dta13(paste0("data/dta_", v, ".dta")), 
+                                 "var.labels")
+                          })
+names(varlabeldd_read) <- as.character(version_list)
+  
+unlink("data", recursive = TRUE)
+
+test_that("save and read varlabels", {
+  
+  for(v in as.character(version_list)) {
+    expect_equal(varlabeldd, varlabeldd_read[[v]])
+  }
+  
+})
+
