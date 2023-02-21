@@ -1,7 +1,7 @@
 Package: readstata13
 Type: Package
 Title: Import 'Stata' Data Files
-Version: 0.10.0
+Version: 0.10.1
 Authors@R: c(
     person("Jan Marvin", "Garbuszus",
     email = "jan.garbuszus@ruhr-uni-bochum.de", role = c("aut")),
@@ -22,9 +22,9 @@ LinkingTo: Rcpp
 ByteCompile: yes
 Suggests: testthat
 Encoding: UTF-8
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3
 NeedsCompilation: yes
-Packaged: 2021-05-25 10:51:41 UTC; arbeit
+Packaged: 2023-02-21 14:05:39 UTC; sj
 Author: Jan Marvin Garbuszus [aut],
   Sebastian Jeworutzki [aut, cre]
     (<https://orcid.org/0000-0002-2671-5253>),
@@ -35,4 +35,4 @@ Author: Jan Marvin Garbuszus [aut],
   Kevin Jin [ctb]
 Maintainer: Sebastian Jeworutzki <Sebastian.Jeworutzki@ruhr-uni-bochum.de>
 Repository: CRAN
-Date/Publication: 2021-05-25 11:50:02 UTC
+Date/Publication: 2023-02-21 16:00:04 UTC

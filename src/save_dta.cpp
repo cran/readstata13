@@ -20,6 +20,16 @@
 using namespace Rcpp;
 using namespace std;
 
+// // create big endian file from little endian
+// #ifdef swapit
+// #undef swapit
+// #undef sbyteorder
+// #undef SBYTEORDER
+// #define swapit TRUE
+// #define sbyteorder "MSF"
+// #define SBYTEORDER 1
+// #endif
+
 // Writes the binary Stata file
 //
 // @param filePath The full systempath to the dta file you want to export.
@@ -246,7 +256,7 @@ int stata_save(const char * filePath, Rcpp::DataFrame dat)
     for (uint64_t i = 0; i < big_k; ++i)
     {
       uint32_t nsortlist = 0;
-      
+
       if ((release == 117) | (release == 118)) {
         writebin((uint16_t)nsortlist, dta, swapit);
       }
@@ -444,10 +454,13 @@ int stata_save(const char * filePath, Rcpp::DataFrame dat)
         {
           int32_t const len = vartypes[i];
 
-          string val_s = as<string>(as<CharacterVector>(dat[i])[j]);
+          CharacterVector cv_s = NA_STRING;
+          cv_s = as<CharacterVector>(dat[i])[j];
 
-          if (val_s == "NA")
-            val_s.clear();
+          std::string val_s = "";
+
+          if (cv_s[0] != NA_STRING)
+            val_s = as<std::string>(cv_s);
 
           writestr(val_s, len, dta);
           break;
@@ -458,8 +471,14 @@ int stata_save(const char * filePath, Rcpp::DataFrame dat)
           /* Stata uses +1 */
           int64_t z = 0;
 
-          CharacterVector b = as<CharacterVector>(dat[i]);
-          const string val_strl = as<string>(b[j]);
+          CharacterVector cv_s = NA_STRING;
+          cv_s = as<CharacterVector>(dat[i])[j];
+
+          std::string val_strl = "";
+
+          if (cv_s[0] != NA_STRING)
+            val_strl = as<std::string>(cv_s);
+
           if (!val_strl.empty())
           {
             switch (release)
@@ -483,13 +502,13 @@ int stata_save(const char * filePath, Rcpp::DataFrame dat)
             char    z[8];
 
             // push back every v, o and val_strl
-            V.push_back(v);
+            V.push_back(v); if (swapit) v = swap_endian(v);
             O.push_back(o);
 
             // z is 'vv-- ----'
             memcpy(&z[0], &v, sizeof(v));
             if (SBYTEORDER == 1) {
-              o <<= 16;
+              o <<= 16; if (swapit) o = swap_endian(o);
             }
             memcpy(&z[2], &o, 6);
             // z is 'vvoo oooo'
@@ -509,10 +528,13 @@ int stata_save(const char * filePath, Rcpp::DataFrame dat)
             V.push_back(v);
             O.push_back(o);
 
-            // z is 'vv-- ----'
-            memcpy(&z[0], &v, sizeof(v));
+            // z is 'vvv- ----'
             if (SBYTEORDER == 1) {
-              o <<= 24;
+              v <<= 8; if (swapit) v = swap_endian(v);
+            }
+            memcpy(&z[0], &v, 3);
+            if (SBYTEORDER == 1) {
+              o <<= 24; if (swapit) o = swap_endian(o);
             }
             memcpy(&z[3], &o, 5);
             // z is 'vvvo oooo'
